@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="theme-color" content="#007aff"/>
+
+  <title>Tricky Quiz</title>
+
+  <link rel="manifest" href="data:application/manifest+json,{
+    \"name\": \"Tricky Quiz\",
+    \"short_name\": \"Tricky\",
+    \"start_url\": \"./\",
+    \"display\": \"standalone\",
+    \"background_color\": \"#f2f2f7\",
+    \"theme_color\": \"#007aff\",
+    \"icons\": [
+      {\"src\": \"https://via.placeholder.com/192/007aff/ffffff?text=TQ\", \"sizes\": \"192x192\", \"type\": \"image/png\"},
+      {\"src\": \"https://via.placeholder.com/512/007aff/ffffff?text=TQ\", \"sizes\": \"512x512\", \"type\": \"image/png\"}
+    ]
+  }">
+
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #f0f4ff, #e0eaff);
+      --bg-dark: linear-gradient(135deg, #0d001a, #1a0033);
+      --text: #1c1c1e;
+      --text-dark: #f5f5f7;
+      --accent: #007aff;
+      --card: rgba(255,255,255,0.92);
+      --card-dark: rgba(28,28,30,0.92);
+      --shadow: 0 8px 32px rgba(0,122,255,0.18);
+      --correct: #34c759;
+      --wrong: #ff3b30;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: all 0.4s ease;
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+    .splash {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .splash h1 {
+      font-size: 4.8rem;
+      font-weight: 900;
+      background: linear-gradient(90deg, #007aff, #00c6ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 0 0 16px;
+    }
+
+    .splash p {
+      font-size: 1.45rem;
+      opacity: 0.9;
+      margin: 0 0 56px;
+      max-width: 380px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #007aff, #0062cc);
+      color: white;
+      border: none;
+      padding: 20px 64px;
+      font-size: 1.35rem;
+      font-weight: 700;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 8px 24px rgba(0,122,255,0.35);
+    }
+
+    .btn:hover {
+      transform: translateY(-4px) scale(1.04);
+      box-shadow: 0 16px 40px rgba(0,122,255,0.45);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 28px;
+      padding: 32px;
+      margin: 20px 0;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(199,199,204,0.6);
+    }
+
+    body.dark .card {
+      background: var(--card-dark);
+      border-color: rgba(58,58,60,0.6);
+    }
+
+    h2 {
+      font-size: 2.1rem;
+      margin: 0 0 28px;
+      background: linear-gradient(90deg, #007aff, #00c6ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .question {
+      font-size: 1.45rem;
+      font-weight: 500;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .option {
+      background: rgba(0,0,0,0.06);
+      padding: 20px;
+      margin: 14px 0;
+      border-radius: 18px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.25s;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    body.dark .option {
+      background: rgba(255,255,255,0.09);
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .option:hover {
+      background: rgba(0,122,255,0.15);
+      transform: translateY(-2px);
+    }
+
+    .correct { background: var(--correct) !important; color: white !important; transform: scale(1.03); }
+    .wrong   { background: var(--wrong)   !important; color: white !important; }
+
+    .disabled { pointer-events: none; opacity: 0.55; }
+
+    .progress {
+      height: 12px;
+      background: rgba(0,0,0,0.1);
+      border-radius: 6px;
+      margin: 24px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #007aff, #00c6ff);
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    .score-screen { text-align: center; padding: 56px 24px; }
+
+    .score-big {
+      font-size: 7rem;
+      font-weight: 900;
+      background: linear-gradient(90deg, #007aff, #00c6ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 32px 0;
+    }
+
+    .result-message { font-size: 1.5rem; margin: 20px 0 40px; opacity: 0.9; }
+
+    .share-btn {
+      margin-top: 40px;
+      background: linear-gradient(135deg, #34c759, #28a745);
+      color: white;
+      border: none;
+      padding: 18px 48px;
+      font-size: 1.25rem;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .share-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(52,199,89,0.4);
+    }
+
+    .toggle-dark {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    body.dark .toggle-dark { background: rgba(0,0,0,0.35); }
+
+    footer {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #8e8e93;
+      font-size: 1rem;
+      opacity: 0.8;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    body.dark footer { color: #8e8e93; }
+  </style>
+</head>
+<body>
+
+<div class="toggle-dark" onclick="toggleDarkMode()">🌙</div>
+
+<!-- Splash -->
+<div id="splash" class="splash">
+  <h1>Tricky Quiz</h1>
+  <p>150+ brain-melting riddles • 25 random questions per round • Think fast! 🎯</p>
+  <button class="btn" id="startBtn">Start Game</button>
+  <footer>Official_vincent</footer>
+</div>
+
+<!-- Game -->
+<div id="game" style="display:none;">
+  <div class="container">
+    <div class="progress">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="card">
+      <h2>Question <span id="qNum">1</span>/25</h2>
+      <div class="question" id="questionText"></div>
+      <div id="options"></div>
+    </div>
+  </div>
+  <footer>Official_vincent</footer>
+</div>
+
+<!-- Result -->
+<div id="result" style="display:none;">
+  <div class="container">
+    <div class="score-screen card">
+      <h2>Game Complete!</h2>
+      <div class="score-big" id="finalScore">0 / 25</div>
+      <p class="result-message" id="resultText">Nice try!</p>
+
+      <button class="share-btn" onclick="shareScore()">Share your score</button>
+      <br><br>
+      <button class="btn" onclick="restartGame()">Play Again</button>
+    </div>
+  </div>
+  <footer>Official_vincent</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<script>
+  console.log("Tricky Quiz - full 150 questions version");
+
+  const questions = [
+    { q: "A man walks into a bar and asks for a glass of water. The bartender pulls out a gun. The man says 'Thank you' and leaves. Why?", options: ["A) Debt", "B) Hiccups", "C) Joke", "D) Crazy"], correct: "B" },
+    { q: "A man is found hanging in a locked room with a puddle of water on the floor. How did he die?", options: ["A) Murder", "B) Stood on ice block that melted", "C) Slipped", "D) Flood"], correct: "B" },
+    { q: "A man pushes his car to a hotel and realizes he's bankrupt. Why?", options: ["A) No gas", "B) Playing Monopoly", "C) Hotel fee", "D) Robbed"], correct: "B" },
+    { q: "Woman shoots husband, holds underwater for 5 minutes, then hangs him. They go to dinner. How?", options: ["A) Failed murder", "B) Photographer", "C) Magic trick", "D) Actors"], correct: "B" },
+    { q: "Father and son crash. Father dies. Surgeon says 'I can't operate — he's my son'. How?", options: ["A) Uncle", "B) Mother", "C) Lying", "D) Time travel"], correct: "B" },
+    { q: "Man lives on 10th floor. Elevator down to ground, back only to 7th + walks — unless raining. Why?", options: ["A) Likes exercise", "B) Very short — uses umbrella", "C) Lift broken above 7", "D) Visits friend on 7"], correct: "B" },
+    { q: "Three switches — one controls a bulb in another room. Enter room only once. How know which switch?", options: ["A) Turn all on", "B) One on 5 min → off, second on → check heat", "C) Guess", "D) Mirror"], correct: "B" },
+    { q: "Man dead in field next to unopened package. How?", options: ["A) Poison package", "B) Unopened parachute", "C) Heart attack", "D) Shot"], correct: "B" },
+    { q: "One-story yellow house. Yellow walls, doors, furniture. What color are the stairs?", options: ["A) Yellow", "B) Black", "C) No stairs", "D) White"], correct: "C" },
+    { q: "Rooster lays egg on barn roof. Which way does it roll?", options: ["A) Left", "B) Right", "C) Down", "D) Roosters don't lay eggs"], correct: "D" },
+    { q: "Plane crashes exactly on US–Canada border. Where bury the survivors?", options: ["A) Canada", "B) You don't bury survivors", "C) International waters", "D) Crash site"], correct: "B" },
+    { q: "How many animals of each sex did Moses take on the ark?", options: ["A) Two each", "B) Zero — it was Noah", "C) One pair clean animals", "D) Only males"], correct: "B" },
+    { q: "Doctor gives 3 pills. Take one every half hour. How long do pills last?", options: ["A) 1.5 hours", "B) 1 hour", "C) 3 hours", "D) 30 min"], correct: "B" },
+    { q: "You drive bus. What color are the bus driver's eyes?", options: ["A) Brown", "B) Blue", "C) Same as yours", "D) Green"], correct: "C" },
+    { q: "Man dead in desert, naked, holding straw. How?", options: ["A) Sunstroke", "B) Short straw in balloon", "C) Murdered", "D) Lost clothes gambling"], correct: "B" },
+    { q: "Six eggs in basket. Six people each take one. One egg left in basket. How?", options: ["A) One person put egg back", "B) Last person took basket", "C) One egg invisible", "D) Trick question"], correct: "B" },
+    { q: "Man found dead next to a rock. How did he die?", options: ["A) Fell on rock", "B) Goliath — killed by David", "C) Heart attack", "D) Murder"], correct: "B" },
+    { q: "What can you hold in your right hand but never in your left hand?", options: ["A) Money", "B) Your left hand", "C) Phone", "D) Glass"], correct: "B" },
+    { q: "What has keys but can't open locks?", options: ["A) Door", "B) Piano", "C) Map", "D) Computer"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Shirt", "B) Bottle", "C) Guitar", "D) All possible"], correct: "B" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "Bat + ball = $1.10. Bat $1 more than ball. Ball costs?", options: ["A) $0.10", "B) $0.05", "C) $1.00", "D) $0.50"], correct: "B" },
+    { q: "Three people pay $30 room ($10 each). Bellboy keeps $2. Missing dollar?", options: ["A) Bellboy stole it", "B) No missing dollar — wrong addition", "C) Manager error", "D) Tax"], correct: "B" },
+    { q: "If all squares are rectangles and all rectangles are polygons, what must be true?", options: ["A) All squares are polygons", "B) All polygons are squares", "C) Some polygons are squares", "D) No squares are polygons"], correct: "A" },
+    { q: "A man says: 'Yesterday I was 25, today I’m 26.' How is this possible?", options: ["A) He’s lying", "B) Birthday yesterday", "C) He miscalculated", "D) It’s a trick"], correct: "B" },
+    { q: "2 coins = 30 cents, one is not a 5-cent coin. What are they?", options: ["A) 25¢ + 5¢", "B) 10¢ + 20¢", "C) 15¢ + 15¢", "D) None"], correct: "A" },
+    { q: "What has many teeth but cannot bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What can run but never walks, has a mouth but never talks, has a head but never weeps, has a bed but never sleeps?", options: ["A) River", "B) Clock", "C) Train", "D) Car"], correct: "A" },
+    { q: "I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", options: ["A) Echo", "B) Ghost", "C) Phone", "D) Music"], correct: "A" },
+    { q: "The person who makes it sells it. The person who buys it never uses it. The person who uses it never knows they're using it. What is it?", options: ["A) Coffin", "B) Ticket", "C) Gift", "D) Secret"], correct: "A" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Storm", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "Some months have 31 days. How many have 28?", options: ["A) 1", "B) 2", "C) All 12", "D) None"], correct: "C" },
+    { q: "If there are 6 apples and you take away 4, how many do you have?", options: ["A) 2", "B) 4", "C) 6", "D) 0"], correct: "B" },
+    { q: "A house has four walls. All walls face south. What color is the bear circling the house?", options: ["A) Black", "B) White", "C) Brown", "D) Gray"], correct: "B" },
+    { q: "If a red house is made from red bricks and a blue house from blue bricks, what is a greenhouse made from?", options: ["A) Green bricks", "B) Glass", "C) Wood", "D) Plastic"], correct: "B" },
+    { q: "What has a bottom at the top?", options: ["A) Leg", "B) Hill", "C) Your legs", "D) Mountain"], correct: "C" },
+    { q: "If you have me, you want to share me. If you share me, you haven't got me. What am I?", options: ["A) Secret", "B) Money", "C) Joke", "D) Food"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a ring but no finger?", options: ["A) Telephone", "B) Bell", "C) Wedding ring", "D) Saturn"], correct: "A" },
+    { q: "I have cities but no houses. I have mountains but no trees. I have water but no fish. What am I?", options: ["A) Desert", "B) Map", "C) River", "D) Globe"], correct: "B" },
+    { q: "What is black when it's clean and white when it's dirty?", options: ["A) Blackboard", "B) Zebra", "C) Newspaper", "D) Coal"], correct: "A" },
+    { q: "What can fill a room but takes up no space?", options: ["A) Light", "B) Air", "C) Sound", "D) Water"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },{ q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a ring but no finger?", options: ["A) Telephone", "B) Bell", "C) Wedding ring", "D) Saturn"], correct: "A" },
+    { q: "I have cities but no houses. I have mountains but no trees. I have water but no fish. What am I?", options: ["A) Desert", "B) Map", "C) River", "D) Globe"], correct: "B" },
+    { q: "What is black when it's clean and white when it's dirty?", options: ["A) Blackboard", "B) Zebra", "C) Newspaper", "D) Coal"], correct: "A" },
+    { q: "What can fill a room but takes up no space?", options: ["A) Light", "B) Air", "C) Sound", "D) Water"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+  { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    { q: "What can you catch but not throw?", options: ["A) Ball", "B) Cold", "C) Fish", "D) Butterfly"], correct: "B" },
+    { q: "What has a neck but no head?", options: ["A) Bottle", "B) Shirt", "C) Guitar", "D) All of the above"], correct: "A" },
+    { q: "What gets wetter the more it dries?", options: ["A) Towel", "B) Sponge", "C) Rain", "D) Paper"], correct: "A" },
+    { q: "What can travel around the world while staying in a corner?", options: ["A) Stamp", "B) Plane", "C) Clock", "D) Map"], correct: "A" },
+    { q: "What has many teeth but can't bite?", options: ["A) Comb", "B) Saw", "C) Zipper", "D) All of the above"], correct: "D" },
+    { q: "What has one eye but can't see?", options: ["A) Needle", "B) Hurricane", "C) Potato", "D) Camera"], correct: "A" },
+    { q: "If you drop a yellow hat in the Red Sea, what does it become?", options: ["A) Wet", "B) Red hat", "C) Sunk", "D) Lost"], correct: "A" },
+    { q: "What can you break, even if you never pick it up or touch it?", options: ["A) Promise", "B) Glass", "C) Record", "D) Heart"], correct: "A" },
+    { q: "I have branches, but no fruit, trunk or leaves. What am I?", options: ["A) Bank", "B) Tree", "C) River", "D) Library"], correct: "A" },
+    { q: "What is always in front of you but can’t be seen?", options: ["A) Future", "B) Nose", "C) Air", "D) Tomorrow"], correct: "A" },
+    { q: "What has a bottom at the top?", options: ["A) Your legs", "B) Hill", "C) Mountain", "D) Chair"], correct: "A" },
+    { q: "If two's company and three's a crowd, what are four and five?", options: ["A) Nine", "B) Party", "C) 20", "D) 45"], correct: "A" },
+    { q: "What has a head and a tail but no body?", options: ["A) Coin", "B) Snake", "C) Comet", "D) Worm"], correct: "A" },
+    { q: "What has hands but can't clap?", options: ["A) Clock", "B) Statue", "C) Tree", "D) Person"], correct: "A" },
+    // Last few to reach ~150 (some repetition for safety)
+    { q: "The more you take, the more you leave behind. What am I?", options: ["A) Footsteps", "B) Money", "C) Time", "D) Breath"], correct: "A" },
+    { q: "I have a face and two hands but no arms or legs. What am I?", options: ["A) Clock", "B) Mirror", "C) Statue", "D) Robot"], correct: "A" },
+    { q: "What is always coming but never arrives?", options: ["A) Tomorrow", "B) Yesterday", "C) Today", "D) Midnight"], correct: "A" },
+    { q: "What has cities but no houses, forests but no trees?", options: ["A) Globe", "B) Map", "C) Book", "D) Dream"], correct: "B" }
+  ];  // ← IMPORTANT: This closes the array
+
+  // ───────────────────────────────────────────────
+  // GAME LOGIC STARTS HERE
+  // ───────────────────────────────────────────────
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let score = 0;
+
+  const splash = document.getElementById('splash');
+  const game = document.getElementById('game');
+  const result = document.getElementById('result');
+  const questionText = document.getElementById('questionText');
+  const optionsDiv = document.getElementById('options');
+  const qNum = document.getElementById('qNum');
+  const progressBar = document.getElementById('progressBar');
+  const finalScore = document.getElementById('finalScore');
+  const resultText = document.getElementById('resultText');
+
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function startGame() {
+    currentQuestions = shuffle([...questions]).slice(0, 25);
+    currentIndex = 0;
+    score = 0;
+    splash.style.display = 'none';
+    game.style.display = 'block';
+    showQuestion();
+  }
+
+  function showQuestion() {
+    if (currentIndex >= currentQuestions.length) {
+      finishGame();
+      return;
+    }
+
+    const q = currentQuestions[currentIndex];
+    qNum.textContent = currentIndex + 1;
+    questionText.textContent = q.q;
+    optionsDiv.innerHTML = '';
+
+    progressBar.style.width = ((currentIndex + 1) / 25 * 100) + '%';
+
+    q.options.forEach(opt => {
+      const div = document.createElement('div');
+      div.className = 'option';
+      div.textContent = opt;
+      div.onclick = () => handleAnswer(opt, q.correct, div);
+      optionsDiv.appendChild(div);
+    });
+  }
+
+  function handleAnswer(selected, correct, element) {
+    const selectedLetter = selected.trim().charAt(0).toUpperCase();
+    const correctLetter = correct.toUpperCase();
+
+    if (selectedLetter === correctLetter) {
+      score++;
+      element.classList.add('correct');
+    } else {
+      element.classList.add('wrong');
+      Array.from(optionsDiv.children).forEach(child => {
+        if (child.textContent.trim().charAt(0).toUpperCase() === correctLetter) {
+          child.classList.add('correct');
+        }
+      });
+    }
+
+    Array.from(optionsDiv.children).forEach(el => {
+      el.classList.add('disabled');
+      el.onclick = null;
+    });
+
+    setTimeout(() => {
+      currentIndex++;
+      showQuestion();
+    }, 1300);
+  }
+
+  function finishGame() {
+    game.style.display = 'none';
+    result.style.display = 'block';
+
+    finalScore.textContent = `${score} / 25`;
+
+    if (score === 25) {
+      resultText.textContent = "Perfect! You're a genius! 🧠✨";
+      confetti({ particleCount: 180, spread: 80, origin: { y: 0.6 } });
+    } else if (score >= 18) {
+      resultText.textContent = "Amazing — very sharp! 🔥";
+    } else if (score >= 12) {
+      resultText.textContent = "Good effort! Keep going 💪";
+    } else {
+      resultText.textContent = "Tricky ones, right? Try again 😄";
+    }
+  }
+
+  function restartGame() {
+    result.style.display = 'none';
+    splash.style.display = 'flex';
+  }
+
+  function shareScore() {
+    const text = `I scored ${score}/25 on Tricky Quiz! Can you beat me? 🎯`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Score copied to clipboard! Paste it anywhere 😎");
+      }).catch(() => {
+        alert(text);
+      });
+    } else {
+      alert(text);
+    }
+  }
+
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    document.querySelector('.toggle-dark').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  // Load saved dark mode
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark');
+    document.querySelector('.toggle-dark').textContent = '☀️';
+  }
+
+  // Start button listener
+  document.getElementById('startBtn').addEventListener('click', startGame);
+
+  console.log("Quiz fully loaded — click Start Game!");
+</script>
+
+</body>
+</html>
